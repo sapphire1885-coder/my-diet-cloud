@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>我的减脂云助手 · 78→70kg</title>
+<title>减脂计划 · 78→70kg (云端版)</title>
 <style>
-  /* 你的完整样式代码粘贴在这里 */
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   :root{
@@ -15,35 +14,45 @@
     --amber:#EF9F27; --amber-light:#FAEEDA; --amber-dark:#633806;
     --blue:#378ADD; --blue-light:#E6F1FB; --blue-dark:#185FA5;
     --coral:#D85A30; --coral-light:#FAECE7; --coral-dark:#712B13;
-    --red:#E24B4A;
+    --pink-light:#FBEAF0; --pink-dark:#72243E; --red:#E24B4A;
   }
   body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh;}
-  /* ... (此处省略中间的 CSS，请使用你原有的样式) ... */
   .header{background:var(--bg2);border-bottom:1px solid var(--border2);padding:1.25rem 1.5rem;position:sticky;top:0;z-index:100;}
   .header-inner{max-width:760px;margin:0 auto;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
   .header h1{font-size:18px;font-weight:700;color:var(--text);}
   .container{max-width:760px;margin:0 auto;padding:1.25rem 1rem 3rem;}
   .tabs{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap;}
-  .tab{border:1px solid var(--border);border-radius:8px;padding:7px 16px;font-size:13px;color:var(--text2);background:var(--bg2);cursor:pointer;}
+  .tab{border:1px solid var(--border);border-radius:8px;padding:7px 16px;font-size:13px;color:var(--text2);background:var(--bg2);cursor:pointer;transition:all 0.15s;font-family:inherit;}
   .tab.active{background:var(--teal-light);border-color:var(--teal-mid);color:var(--teal-dark);font-weight:500;}
   .panel{display:none;}.panel.active{display:block;}
+  .sub{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin:1rem 0 0.5rem;}
   .card{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.625rem;}
   .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid var(--border2);}
-  .info-box{background:var(--teal-light);border-radius:10px;padding:0.875rem 1rem;font-size:13px;color:var(--teal-dark);margin-bottom:0.625rem;}
+  .row:last-child{border-bottom:none;}
+  .rl{font-size:13px;color:var(--text2);min-width:68px;flex-shrink:0;}
+  .rv{font-size:13px;color:var(--text);text-align:right;flex:1;line-height:1.55;}
+  .badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:5px;margin-left:5px;font-weight:500;}
+  .bt{background:var(--teal-light);color:var(--teal-dark);}
+  .ba{background:var(--amber-light);color:var(--amber-dark);}
+  .bb{background:var(--blue-light);color:var(--blue-dark);}
+  .info-box{background:var(--teal-light);border-radius:10px;padding:0.875rem 1rem;font-size:13px;color:var(--teal-dark);line-height:1.7;margin-bottom:0.625rem;}
+  .fruit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:0.625rem;}
+  .fruit-card{border-radius:10px;padding:0.875rem;border:1px solid var(--border2);background:var(--bg2);}
+  .fruit-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;display:inline-block;margin-bottom:6px;}
   .metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:0.875rem;}
   .mc{background:var(--bg3);border-radius:10px;padding:0.875rem 1rem;}
   .mv{font-size:22px;font-weight:700;}
+  .prog-bg{background:var(--bg3);border-radius:4px;height:8px;}
+  .prog-fill{height:8px;border-radius:4px;background:var(--teal);transition:width 0.3s;}
   canvas{display:block;width:100%;height:auto;}
 </style>
 </head>
 <body>
-
 <div class="header">
   <div class="header-inner">
-    <h1>我的减脂云助手 <span id="cloud-status" style="font-size:10px; font-weight:normal; background:#eee; padding:2px 6px; border-radius:4px; margin-left:10px;">连接中...</span></h1>
+    <h1>减脂计划 <span id="sync-status" style="font-size:10px; font-weight:normal; background:#eee; padding:2px 6px; border-radius:4px; margin-left:10px;">连接中...</span></h1>
   </div>
 </div>
-
 <div class="container">
   <div class="tabs">
     <button class="tab active" onclick="switchTab('diet')">饮食计划</button>
@@ -54,85 +63,100 @@
 
   <div id="tab-diet" class="panel active">
     <div class="info-box">核心原则：不算卡路里，用「食物结构」控制摄入。</div>
+    <div class="sub">平日（2顿）</div>
+    <div class="card">
+      <div class="row"><div class="rl">早餐</div><div class="rv">鸡蛋2个 + 豆浆/牛奶 + 少量全麦面包或燕麦<span class="badge bt">高蛋白</span></div></div>
+      <div class="row"><div class="rl">晚餐</div><div class="rv">一掌蛋白质（鱼/鸡/豆腐）+ 一拳蔬菜 + 主食减半<span class="badge ba">控碳水</span></div></div>
     </div>
-
+    <div class="sub">周末自由餐</div>
+    <div class="card">
+      <div class="row"><div class="rl">周六晚饭</div><div class="rv">正式自由餐 — 想吃什么吃什么，不用愧疚<span class="badge bt">每周1次</span></div></div>
+    </div>
   </div>
 
+  <div id="tab-workout" class="panel">
+    <div class="info-box">目标：全身塑形 · 提臀 · 减脂到70kg。哑铃统一10lb。</div>
+    <div class="card">
+        <div class="row"><div class="rl">力量训练</div><div class="rv">每周3次，A→B→C 循环</div></div>
+    </div>
+  </div>
+
+  <div id="tab-checkin" class="panel">
+    <div class="metric-grid">
+      <div class="mc"><div class="ml">总积分</div><div class="mv" id="pts-display">0</div></div>
+      <div class="mc"><div class="ml">已打卡</div><div class="mv"><span id="total-done">0</span> 天</div></div>
+      <div class="mc"><div class="ml">今日蛋白质</div><div class="mv"><span id="today-prot">0</span> g</div></div>
+    </div>
+    <div id="month-tabs" style="display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap;"></div>
+    <div id="calendar-body"></div>
+    <div class="sub">积分进度</div>
+    <div class="prog-row" style="display:flex;align-items:center;gap:10px;margin:10px 0;">
+        <div style="flex:1" class="prog-bg"><div id="p3" class="prog-fill" style="width:0%"></div></div>
+        <div id="pv3" style="font-size:12px;">0/80</div>
+    </div>
+  </div>
+
+  <div id="tab-weight" class="panel">
+    <div class="metric-grid">
+      <div class="mc"><div class="ml">起始体重</div><div class="mv">78 kg</div></div>
+      <div class="mc"><div class="ml">目标体重</div><div class="mv">70 kg</div></div>
+      <div class="mc"><div class="ml">已减去</div><div class="mv"><span id="weight-lost">0</span> kg</div></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="date" id="weight-date-picker" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:8px;">
+        <input type="number" step="0.1" id="weight-value-input" placeholder="kg" style="width:80px; padding:8px; border:1px solid #ddd; border-radius:8px;">
+      </div>
+      <button onclick="saveWeightEntry()" style="width:100%; padding:10px; background:var(--teal); color:white; border:none; border-radius:8px;">保存到云端</button>
+      <div id="weight-save-status" style="font-size:12px; text-align:center; margin-top:5px;"></div>
+    </div>
+    <div id="weight-history" style="margin-top:20px;"></div>
+    <div class="sub">趋势图</div>
+    <canvas id="weight-chart" width="600" height="220"></canvas>
+  </div>
+</div>
+
 <script>
-// --- 云端核心逻辑 ---
+// --- 云端同步核心逻辑 ---
 var START = new Date(2026,3,15);
 var END   = new Date(2026,6,14);
 var DIET_ITEMS=['蛋白质每餐有','主食减半/控量','水果只吃1份','喝够2.5L水'];
-var WK_PTS=[3,1,2,1,3,0,1];
-var WK_NAMES=['周一','周二','周三','周四','周五','周六','周日'];
 var WK_TYPES=['力量','轻走','羽毛球','轻走','力量','自由餐','休息'];
+var WK_PTS  =[3,1,2,1,3,0,1];
+var WK_NAMES=['周一','周二','周三','周四','周五','周六','周日'];
 
-// 初始数据对象
 var data = {};
 var weightData = {};
 
-// 1. 【核心：页面一开，立刻从云端拉取数据】
-async function initCloud() {
-  const statusEl = document.getElementById('cloud-status');
+// 1. 初始化：拉取云端数据
+async function init() {
+  const status = document.getElementById('sync-status');
   try {
-    // 优先从云端获取
     const res = await fetch('/api/save');
     const cloud = await res.json();
     if (cloud.checkin) data = cloud.checkin;
     if (cloud.weightByDate) weightData = cloud.weightByDate;
-    
-    statusEl.innerText = "云端已同步";
-    statusEl.style.background = "#E1F5EE";
-    statusEl.style.color = "#1D9E75";
+    status.innerText = "同步完成 ✓";
+    status.style.background = "#E1F5EE";
+    status.style.color = "#1D9E75";
   } catch (e) {
-    // 失败了再读本地
     data = JSON.parse(localStorage.getItem('plan3m')||'{}');
     weightData = JSON.parse(localStorage.getItem('weightByDate')||'{}');
-    statusEl.innerText = "本地离线模式";
+    status.innerText = "离线模式";
   }
-  
-  // 数据加载完后，渲染界面
   renderCalendar();
-  if (typeof initWeightTab === "function") initWeightTab();
+  initWeightTab();
   updateStats();
 }
 
-// 2. 【核心：改动保存函数，增加云端同步功能】
+// 2. 保存：同步到云端
 async function saveAll() {
-  // 存本地备份
   localStorage.setItem('plan3m', JSON.stringify(data));
   localStorage.setItem('weightByDate', JSON.stringify(weightData));
-
-  // 同步到云端
   try {
     await fetch('/api/save', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ checkin: data, weightByDate: weightData })
     });
-    console.log("云端保存成功");
   } catch (e) {
-    console.warn("云端同步失败，已保存在本地");
-  }
-}
-
-// 替换你原本代码里的旧保存函数
-function save() { saveAll(); }
-function saveWeight(k, v) {
-  if (v === null || isNaN(v)) { delete weightData[k]; }
-  else { weightData[k] = v; }
-  saveAll();
-}
-
-// 3. 【此处粘贴你原本剩下的所有 JavaScript 函数，如 renderCalendar, updateStats, calcProtein 等】
-// [确保你原本的代码完整地保留在这里]
-
-function dateKey(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
-
-// 最后，将 window.onload 改为我们的初始化
-window.onload = initCloud;
-
-// [剩下的 renderCalendar, switchTab, initWeightTab 等函数...请保留你原有的逻辑]
-</script>
-</body>
-</html>
