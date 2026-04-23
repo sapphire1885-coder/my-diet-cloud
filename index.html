@@ -433,7 +433,57 @@ function saveWeight(k,v){
   else{weightData[k]=v;}
   localStorage.setItem('weightByDate', JSON.stringify(weightData));
 }
-function saveAll(){
+// --- 替换你的 saveAll 函数 ---
+async function saveAll(){
+  // 本地依然存一份保底
+  save(); 
+  localStorage.setItem('weightByDate', JSON.stringify(weightData));
+  
+  // 发送到云端 Redis
+  try {
+    await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checkin: data, weightByDate: weightData })
+    });
+  } catch (e) {
+    console.error("云端同步失败，暂时存在本地", e);
+  }
+}
+
+// --- 在代码最底下，把 window.onload 那块加上读取云端的逻辑 ---
+async function loadFromCloud() {
+  try {
+    const res = await fetch('/api/sync');
+    if (res.ok) {
+      const cloudData = await res.json();
+      // 如果云端有数据，覆盖本地数据
+      if (Object.keys(cloudData.checkin).length > 0) {
+        data = cloudData.checkin;
+        localStorage.setItem('plan3m', JSON.stringify(data));
+      }
+      if (Object.keys(cloudData.weightByDate).length > 0) {
+        weightData = cloudData.weightByDate;
+        localStorage.setItem('weightByDate', JSON.stringify(weightData));
+      }
+      // 重新渲染页面
+      renderCalendar();
+      updateStats();
+      if(typeof initWeightTab === 'function') initWeightTab();
+    }
+  } catch (e) {
+    console.log("云端拉取失败，使用本地缓存");
+  }
+}
+
+// 替换你原本在代码最后面直接调用 renderCalendar() 的部分
+window.onload = function() {
+  renderCalendar();
+  initWeightTab();
+  updateStats();
+  // 进页面第一件事：去云端拉最新数据！
+  loadFromCloud();
+};{
   save();
   localStorage.setItem('weightByDate', JSON.stringify(weightData));
 };
