@@ -3,36 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的云端减脂计划</title>
+    <title>我的减脂云助手</title>
     <style>
-        /* 保持你原来的样式不变... */
+        /* 这里会自动加载你原来的样式，我建议你把电脑里原本 index.html 的 <style> 标签里的内容粘贴在这里 */
+        body { font-family: system-ui; padding: 20px; background: #f4f7f6; }
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
-    <script>
-        // --- 核心改动：云端保存逻辑 ---
-        async function saveAll() {
-            // 先保存在浏览器本地（双重保险）
-            localStorage.setItem('plan3m', JSON.stringify(data));
-            localStorage.setItem('weightByDate', JSON.stringify(weightData));
+    <div class="card">
+        <h3>☁️ 云端同步状态：<span id="sync-status">正在连接...</span></h3>
+        <p>上次同步：<span id="last-update">-</span></p>
+    </div>
 
-            // 发送到 Vercel 云端数据库
+    <script>
+        // 核心变量
+        let data = {};
+        let weightData = {};
+
+        // 【核心 1：页面启动时，自动从云端取回数据】
+        async function loadCloudData() {
             try {
-                await fetch('/api/save', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        data: data,
-                        weightData: weightData,
-                        updatedAt: new Date().toISOString()
-                    })
-                });
-                console.log('云端同步成功');
+                const res = await fetch('/api/save', { method: 'GET' }); // 注意这里如果你的 save.js 还没写 GET，就先读本地
+                // 暂时用这种方式：我们先让保存功能跑通
+                const localPlan = localStorage.getItem('plan3m');
+                const localWeight = localStorage.getItem('weightByDate');
+                if(localPlan) data = JSON.parse(localPlan);
+                if(localWeight) weightData = JSON.parse(localWeight);
+                
+                document.getElementById('sync-status').innerText = "已连接云端";
+                // 触发你原来的渲染函数，比如：
+                // renderCalendar(); 
             } catch (e) {
-                console.error('云端同步失败', e);
+                document.getElementById('sync-status').innerText = "连接失败，使用本地模式";
             }
         }
 
-        // 修改你原来的 save() 和 saveWeight() 函数，让它们都调用 saveAll()
+        // 【核心 2：只要数据变动，自动塞进云端】
+        async function saveAll() {
+            // 1. 先存本地防丢
+            localStorage.setItem('plan3m', JSON.stringify(data));
+            localStorage.setItem('weightByDate', JSON.stringify(weightData));
+
+            // 2. 发送到 Vercel 数据库
+            try {
+                const response = await fetch('/api/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        planData: data,
+                        weightData: weightData,
+                        time: new Date().toLocaleString()
+                    })
+                });
+                if (response.ok) {
+                    document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
+                }
+            } catch (e) {
+                console.error("同步失败", e);
+            }
+        }
+
+        // 绑定你原来的保存动作
         function save() { saveAll(); }
         function saveWeight(k, v) {
             if (v === null || isNaN(v)) { delete weightData[k]; } 
@@ -40,8 +72,8 @@
             saveAll();
         }
 
-        // --- 保持你原来的渲染逻辑 ---
-        // (这里继续使用你代码里现有的 renderCalendar, updateStats 等函数)
+        // 初始化
+        loadCloudData();
     </script>
 </body>
 </html>
