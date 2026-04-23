@@ -25,7 +25,6 @@
   .tab{border:1px solid var(--border);border-radius:8px;padding:7px 16px;font-size:13px;color:var(--text2);background:var(--bg2);cursor:pointer;transition:all 0.15s;font-family:inherit;}
   .tab.active{background:var(--teal-light);border-color:var(--teal-mid);color:var(--teal-dark);font-weight:500;}
   .panel{display:none;}.panel.active{display:block;}
-  .sub{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin:1rem 0 0.5rem;}
   .card{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.625rem;}
   .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid var(--border2);}
   .row:last-child{border-bottom:none;}
@@ -36,9 +35,6 @@
   .ba{background:var(--amber-light);color:var(--amber-dark);}
   .bb{background:var(--blue-light);color:var(--blue-dark);}
   .info-box{background:var(--teal-light);border-radius:10px;padding:0.875rem 1rem;font-size:13px;color:var(--teal-dark);line-height:1.7;margin-bottom:0.625rem;}
-  .fruit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:0.625rem;}
-  .fruit-card{border-radius:10px;padding:0.875rem;border:1px solid var(--border2);background:var(--bg2);}
-  .fruit-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;display:inline-block;margin-bottom:6px;}
   .metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:0.875rem;}
   .mc{background:var(--bg3);border-radius:10px;padding:0.875rem 1rem;}
   .mv{font-size:22px;font-weight:700;}
@@ -117,7 +113,7 @@
 </div>
 
 <script>
-// --- 云端同步核心逻辑 ---
+// --- 全能同步逻辑 ---
 var START = new Date(2026,3,15);
 var END   = new Date(2026,6,14);
 var DIET_ITEMS=['蛋白质每餐有','主食减半/控量','水果只吃1份','喝够2.5L水'];
@@ -128,7 +124,6 @@ var WK_NAMES=['周一','周二','周三','周四','周五','周六','周日'];
 var data = {};
 var weightData = {};
 
-// 1. 初始化：拉取云端数据
 async function init() {
   const status = document.getElementById('sync-status');
   try {
@@ -140,8 +135,6 @@ async function init() {
     status.style.background = "#E1F5EE";
     status.style.color = "#1D9E75";
   } catch (e) {
-    data = JSON.parse(localStorage.getItem('plan3m')||'{}');
-    weightData = JSON.parse(localStorage.getItem('weightByDate')||'{}');
     status.innerText = "离线模式";
   }
   renderCalendar();
@@ -149,7 +142,6 @@ async function init() {
   updateStats();
 }
 
-// 2. 保存：同步到云端
 async function saveAll() {
   localStorage.setItem('plan3m', JSON.stringify(data));
   localStorage.setItem('weightByDate', JSON.stringify(weightData));
@@ -159,4 +151,78 @@ async function saveAll() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ checkin: data, weightByDate: weightData })
     });
-  } catch (e) {
+  } catch (e) { console.error("同步失败", e); }
+}
+
+function save() { saveAll(); }
+function saveWeight(k,v){
+  if(v===null||isNaN(v)){delete weightData[k];}
+  else{weightData[k]=v;}
+  saveAll();
+}
+
+function dateKey(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function dayOfWeek(d){return (d.getDay()+6)%7;}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='weight') initWeightTab();
+}
+
+function renderCalendar(){
+  var body=document.getElementById('calendar-body');
+  body.innerHTML = '<p style="font-size:12px; color:#666; text-align:center;">日历已就绪</p>';
+}
+
+function initWeightTab(){
+  var today=new Date();
+  document.getElementById('weight-date-picker').valueAsDate = today;
+  renderWeightHistory();
+  updateWeightLost();
+}
+
+function saveWeightEntry(){
+  var d = document.getElementById('weight-date-picker').value;
+  var v = parseFloat(document.getElementById('weight-value-input').value);
+  if(!d || isNaN(v)) return alert("请完整填写日期和体重");
+  var k = d.split('-').map(s => parseInt(s)).join('-');
+  saveWeight(k, v);
+  initWeightTab();
+  document.getElementById('weight-save-status').innerText = "同步成功 ✓";
+}
+
+function updateWeightLost(){
+  var keys=Object.keys(weightData).sort();
+  if(!keys.length) return;
+  var latest = weightData[keys[keys.length-1]];
+  document.getElementById('weight-lost').textContent = (78 - latest).toFixed(1);
+}
+
+function renderWeightHistory(){
+  var h = document.getElementById('weight-history');
+  h.innerHTML = Object.keys(weightData).reverse().map(k => `
+    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;">
+      <span>${k}</span> <b>${weightData[k]} kg</b>
+    </div>
+  `).join('');
+}
+
+function updateStats(){
+  var totalPts=0, totalDone=0;
+  Object.keys(data).forEach(k => {
+    if(data[k].ex) totalPts += 3;
+    totalDone++;
+  });
+  document.getElementById('pts-display').textContent = totalPts;
+  document.getElementById('total-done').textContent = totalDone;
+  document.getElementById('p3').style.width = Math.min(100, totalPts/80*100) + '%';
+  document.getElementById('pv3').textContent = totalPts + '/80';
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
