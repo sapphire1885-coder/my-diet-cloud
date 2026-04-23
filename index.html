@@ -1145,9 +1145,42 @@ function drawChart(){
     ctx.fillText('输入体重后图表自动显示',W/2,H/2);ctx.restore();
   }
 }
+// --- 核心同步：让手机和电脑跨网络连接 ---
+
+// 1. 升级保存函数：现在你点任何打卡，它都会自动飞到 Vercel 云端
+async function saveAll(){
+  localStorage.setItem('plan3m', JSON.stringify(data));
+  localStorage.setItem('weightByDate', JSON.stringify(weightData));
+  try {
+    await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checkin: data, weightByDate: weightData })
+    });
+  } catch (e) { console.log("云端暂时不通，已存本地"); }
+}
+
+// 2. 升级读取函数：网页打开时，第一时间去找云端拿最新的数据
+async function loadFromCloud() {
+  try {
+    const res = await fetch('/api/sync');
+    if (res.ok) {
+      const cloud = await res.json();
+      // 如果云端有新数据，立刻同步到当前页面
+      if (cloud.checkin && Object.keys(cloud.checkin).length > 0) data = cloud.checkin;
+      if (cloud.weightByDate && Object.keys(cloud.weightByDate).length > 0) weightData = cloud.weightByDate;
+      renderCalendar(); 
+      updateStats();
+      if(typeof initWeightTab === 'function') initWeightTab();
+    }
+  } catch (e) { console.log("正在使用本地数据"); }
+}
+
+// 3. 启动指令：先显示本地数据（保证速度），然后立刻去抓取云端（保证同步）
 renderCalendar();
 initWeightTab();
 updateStats();
+loadFromCloud();
 </script>
 </body>
 </html>
